@@ -1,10 +1,35 @@
-use std::num::ParseFloatError;
+use std::collections::HashMap;
+
+use lazy_static::lazy_static;
 
 use crate::{
     token::{LiteralValue, Token},
     token_type::TokenType,
     ErrorMsg,
 };
+
+lazy_static! {
+    static ref KEYWORDS: HashMap<&'static str, TokenType> = {
+        HashMap::from_iter([
+            ("and", TokenType::And),
+            ("class", TokenType::Class),
+            ("else", TokenType::Else),
+            ("false", TokenType::False),
+            ("for", TokenType::For),
+            ("fun", TokenType::Fun),
+            ("if", TokenType::If),
+            ("nil", TokenType::Nil),
+            ("or", TokenType::Or),
+            ("print", TokenType::Print),
+            ("return", TokenType::Return),
+            ("super", TokenType::Super),
+            ("this", TokenType::This),
+            ("true", TokenType::True),
+            ("var", TokenType::Var),
+            ("while", TokenType::While),
+        ])
+    };
+}
 
 #[derive(Default)]
 pub struct Scanner<'a> {
@@ -111,10 +136,31 @@ impl<'a> Scanner<'a> {
                 println!(">> is digit");
                 self.number();
             }
+            'a'..='z' | 'A'..='Z' | '_' => {
+                self.identifier();
+            }
             _ => {
                 ErrorMsg::error(self.line, "Unexpected char");
             }
         }
+    }
+
+    fn identifier(&mut self) {
+        while self.peek().is_ascii_alphanumeric() {
+            self.advance();
+        }
+
+        let lit_text = &self.source[self.start..self.current];
+
+        let token_type = KEYWORDS
+            .get(lit_text)
+            .unwrap_or(&TokenType::Identifier)
+            .clone();
+
+        self.add_token(
+            token_type,
+            Some(LiteralValue::IdentifierValue(lit_text.to_string())),
+        );
     }
 
     fn number(&mut self) {
