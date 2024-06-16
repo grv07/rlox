@@ -26,7 +26,8 @@ pub enum TokenType {
     // LITERALS.
     Identifier,
     String,
-    Number,
+    INumber,
+    FNumber,
 
     // KEYWORDS.
     And,

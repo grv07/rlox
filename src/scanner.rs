@@ -181,13 +181,13 @@ impl<'a> Scanner<'a> {
         }
 
         let number = &self.source[self.start..self.current];
-        let lit_type = if is_float {
-            LiteralValue::FValue(number.parse::<f64>().unwrap())
+        if is_float {
+            let lit_type = LiteralValue::FValue(number.parse::<f64>().unwrap());
+            self.add_token(TokenType::FNumber, Some(lit_type))
         } else {
-            LiteralValue::IntValue(number.parse::<i64>().unwrap())
-        };
-
-        self.add_token(TokenType::Number, Some(lit_type));
+            let lit_type = LiteralValue::IntValue(number.parse::<i64>().unwrap());
+            self.add_token(TokenType::INumber, Some(lit_type))
+        }
     }
 
     fn is_digit(&self, c: char) -> bool {

@@ -30,7 +30,7 @@ pub enum Expr {
         right: Box<Expr>,
     },
     Unary {
-        oprator: Token,
+        operator: Token,
         expression: Box<Expr>,
     },
     Grouping {
@@ -56,9 +56,9 @@ impl ToString for Expr {
             ),
 
             Expr::Unary {
-                oprator,
+                operator,
                 expression,
-            } => format!("({} {})", oprator.lexeme, expression.to_string()),
+            } => format!("({} {})", operator.lexeme, expression.to_string()),
 
             Expr::Grouping { expression } => format!("(group {})", expression.to_string()),
             Expr::Literal { value } => format!("{}", value.to_string()),
@@ -90,7 +90,7 @@ mod test {
         let multi = Token::new(crate::token_type::TokenType::Star, None, "*".to_string(), 0);
         let ast = Expr::Binary {
             left: Box::new(Expr::Unary {
-                oprator: minus_token,
+                operator: minus_token,
                 expression: Box::new(Expr::Literal {
                     value: one_two_three,
                 }),

@@ -1,6 +1,6 @@
 use crate::token_type::TokenType;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LiteralValue {
     IntValue(i64),
     FValue(f64),
@@ -25,11 +25,11 @@ impl ToString for LiteralValue {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub lexeme: String,
     line: usize,
-    literal: Option<LiteralValue>,
+    pub literal: Option<LiteralValue>,
     pub token_type: TokenType,
 }
 

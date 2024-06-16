@@ -1,4 +1,9 @@
-use crate::{expr::Expr, token::Token, token_type::TokenType};
+use crate::{
+    expr::Expr,
+    token::{LiteralValue, Token},
+    token_type::TokenType,
+    ErrorMsg,
+};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -30,13 +35,75 @@ impl Parser {
         todo!()
     }
 
-    fn unary() -> Expr {
-        todo!()
+    /// (! | -) unary | primary
+    fn unary(&mut self) -> Expr {
+        if self.match_token([TokenType::Minus, TokenType::Bang]) {
+            let operator = self.previous().clone();
+            let right = self.unary();
+
+            return Expr::Unary {
+                operator: operator.clone(),
+                expression: Box::new(right),
+            };
+        }
+
+        self.primary().unwrap()
     }
 
-    fn primary() -> Expr {
-        todo!()
+    /// primary = Number | String | True | False | Nil | "(" expression ")"
+    fn primary(&mut self) -> Option<Expr> {
+        if self.match_token([TokenType::INumber]) {
+            let lit = self.previous().clone().literal.unwrap();
+            return Some(Expr::Literal { value: lit });
+        }
+
+        if self.match_token([TokenType::FNumber]) {
+            let lit = self.previous().clone().literal.unwrap();
+            return Some(Expr::Literal { value: lit });
+        }
+
+        if self.match_token([TokenType::String]) {
+            let lit = self.previous().clone().literal.unwrap();
+            return Some(Expr::Literal { value: lit });
+        }
+
+        if self.match_token([TokenType::True]) {
+            return Some(Expr::Literal {
+                value: LiteralValue::True,
+            });
+        }
+
+        if self.match_token([TokenType::False]) {
+            return Some(Expr::Literal {
+                value: LiteralValue::True,
+            });
+        }
+
+        if self.match_token([TokenType::Nil]) {
+            return Some(Expr::Literal {
+                value: LiteralValue::Nil,
+            });
+        }
+
+        if self.match_token([TokenType::LeftParen]) {
+            let expr = self.expression();
+            // advance and check if next is right paren
+            if self.advance().token_type == TokenType::RightParen {
+                return Some(Expr::Grouping {
+                    expression: Box::new(expr),
+                });
+            }
+
+            return None;
+        }
+        None
     }
+
+    // fn consume(&mut self, token_types: impl IntoIterator<Item = TokenType>, msg: &str) {
+    //     if !self.match_token(token_types) {
+    //         ErrorMsg::report(, , )
+    //     }
+    // }
 
     fn match_token(&mut self, token_types: impl IntoIterator<Item = TokenType>) -> bool {
         if token_types.into_iter().any(|tt| self.check(tt)) {
@@ -47,7 +114,7 @@ impl Parser {
     }
 
     fn peek(&self) -> &Token {
-        self.tokens.get(self.current).unwrap()
+        &self.tokens[self.current]
     }
 
     fn is_at_end(&self) -> bool {
@@ -55,7 +122,7 @@ impl Parser {
     }
 
     fn previous(&self) -> &Token {
-        self.tokens.get(self.current - 1).unwrap()
+        &self.tokens[self.current - 1]
     }
 
     fn advance(&mut self) -> &Token {
@@ -71,5 +138,23 @@ impl Parser {
             return false;
         }
         return self.peek().token_type == token_type;
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Parser;
+    use crate::token::Token;
+
+    #[test]
+    fn primary_test() {
+        let mut parser = Parser::new(vec![Token::new(
+            crate::token_type::TokenType::String,
+            Some(crate::token::LiteralValue::StringValue("data".to_string())),
+            "data".to_string(),
+            1,
+        )]);
+
+        println!(" ==== {:?}", parser.primary());
     }
 }
