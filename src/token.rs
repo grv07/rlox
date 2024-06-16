@@ -6,12 +6,29 @@ pub enum LiteralValue {
     FValue(f64),
     StringValue(String),
     IdentifierValue(String),
+    True,
+    False,
+    Nil,
+}
+
+impl ToString for LiteralValue {
+    fn to_string(&self) -> String {
+        match self {
+            LiteralValue::IntValue(i) => i.to_string(),
+            LiteralValue::FValue(f) => f.to_string(),
+            LiteralValue::StringValue(s) => s.to_string(),
+            LiteralValue::IdentifierValue(i) => i.to_string(),
+            LiteralValue::True => "true".to_string(),
+            LiteralValue::False => "false".to_string(),
+            LiteralValue::Nil => "nil".to_string(),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct Token {
     token_type: TokenType,
-    lexeme: String,
+    pub lexeme: String,
     literal: Option<LiteralValue>,
     line: usize,
 }

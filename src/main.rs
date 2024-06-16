@@ -1,3 +1,4 @@
+mod expr;
 mod scanner;
 mod token;
 mod token_type;
@@ -6,8 +7,8 @@ use anyhow::Context;
 use scanner::Scanner;
 use std::io::Write;
 use std::{env, fs::File, io::Read, path::Path};
-use token::Token;
-use token_type::TokenType;
+// use token::Token;
+// use token_type::TokenType;
 
 #[derive(Default)]
 struct Lox {
