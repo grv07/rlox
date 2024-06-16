@@ -1,5 +1,4 @@
 use std::boxed::Box;
-use std::fmt::Display;
 
 use crate::token::{LiteralValue, Token};
 
@@ -24,7 +23,7 @@ use crate::token::{LiteralValue, Token};
 // }
 
 #[derive(Debug)]
-enum Expr {
+pub enum Expr {
     Binary {
         left: Box<Expr>,
         operator: Token,
