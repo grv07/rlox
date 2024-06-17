@@ -246,12 +246,12 @@ mod test {
             1,
         )]);
 
-        println!(" ==== {:?}", parser.primary());
+        println!("{:?}", parser.primary());
     }
 
     #[test]
     fn unary_test() {
-        let text = "! (1 + 9)";
+        let text = "!1.9 + 9";
         let mut scanner = Scanner::new(text);
         let tokens = scanner.scan_tokens();
 
@@ -259,6 +259,6 @@ mod test {
 
         let mut parser = Parser::new(tokens.to_vec());
 
-        println!("{:?}", parser.unary());
+        println!("{:?}", parser.expression());
     }
 }

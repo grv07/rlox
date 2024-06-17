@@ -134,7 +134,6 @@ impl<'a> Scanner<'a> {
             }
             '"' => self.handle_string(),
             '0'..='9' => {
-                println!(">> is digit");
                 self.number();
             }
             'a'..='z' | 'A'..='Z' | '_' => {
@@ -169,7 +168,6 @@ impl<'a> Scanner<'a> {
     fn number(&mut self) {
         let mut is_float = false;
 
-        println!("here >> {}", self.peek());
         while self.is_digit(self.peek()) {
             self.advance();
         }
