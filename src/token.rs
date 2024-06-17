@@ -28,7 +28,7 @@ impl ToString for LiteralValue {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub lexeme: String,
-    line: usize,
+    pub line: usize,
     pub literal: Option<LiteralValue>,
     pub token_type: TokenType,
 }

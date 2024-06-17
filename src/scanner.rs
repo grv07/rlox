@@ -82,10 +82,10 @@ impl<'a> Scanner<'a> {
     fn scan_token(&mut self) {
         let c = self.advance();
         match c {
-            '{' => self.add_token(TokenType::LeftParen, None),
-            '}' => self.add_token(TokenType::RightParen, None),
-            '(' => self.add_token(TokenType::LeftBrace, None),
-            ')' => self.add_token(TokenType::RightBrace, None),
+            '{' => self.add_token(TokenType::LeftBrace, None),
+            '}' => self.add_token(TokenType::RightBrace, None),
+            '(' => self.add_token(TokenType::LeftParen, None),
+            ')' => self.add_token(TokenType::RightParen, None),
             ',' => self.add_token(TokenType::Comma, None),
             '-' => self.add_token(TokenType::Minus, None),
             '+' => self.add_token(TokenType::Plus, None),
@@ -128,6 +128,7 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::Slash, None)
                 }
             }
+            ' ' | '\r' | '\t' => {}
             '\n' => {
                 self.line += 1;
             }
@@ -139,8 +140,10 @@ impl<'a> Scanner<'a> {
             'a'..='z' | 'A'..='Z' | '_' => {
                 self.identifier();
             }
+
             _ => {
-                ErrorMsg::error(self.line, "Unexpected char");
+                // ErrorMsg::error(self.line, &format!("Unexpected char >> {}", c));
+                println!("Line {} Unexpected char >> {}", self.line, c);
             }
         }
     }
@@ -242,7 +245,7 @@ impl<'a> Scanner<'a> {
         }
 
         if self.is_at_end() {
-            ErrorMsg::error(self.line, "Unterminated string");
+            ErrorMsg::report(self.line, "", "Unterminated string");
         }
 
         self.advance();

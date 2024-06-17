@@ -1,5 +1,7 @@
+use std::fmt::Binary;
+
 use crate::{
-    expr::Expr,
+    expr::{self, Expr},
     token::{LiteralValue, Token},
     token_type::TokenType,
     ErrorMsg,
@@ -15,24 +17,84 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    fn expression(&self) -> Expr {
+    fn expression(&mut self) -> Expr {
         self.equality()
     }
 
-    fn equality(&self) -> Expr {
-        todo!()
+    /// equality → comparison ( ( "!=" | "==" ) comparison )* ;
+    fn equality(&mut self) -> Expr {
+        let expr = self.comparison();
+        while self.match_token([TokenType::BangEqual, TokenType::EqualEqual]) {
+            let operator = self.previous().to_owned();
+
+            let right = Box::new(self.comparison());
+
+            return Expr::Binary {
+                left: Box::new(expr),
+                operator,
+                right,
+            };
+        }
+
+        expr
     }
 
-    fn comparison() -> Expr {
-        todo!()
+    /// comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+    fn comparison(&mut self) -> Expr {
+        let expr = self.term();
+
+        while self.match_token([
+            TokenType::Greater,
+            TokenType::GreaterEqual,
+            TokenType::Less,
+            TokenType::LessEqual,
+        ]) {
+            let operator = self.previous().to_owned();
+            let right = Box::new(self.term());
+
+            return Expr::Binary {
+                left: Box::new(expr),
+                operator,
+                right,
+            };
+        }
+
+        expr
     }
 
-    fn term() -> Expr {
-        todo!()
+    /// term → factor ( ( "-" | "+" ) factor )* ;
+    fn term(&mut self) -> Expr {
+        let expr = self.factor();
+
+        while self.match_token([TokenType::Minus, TokenType::Plus]) {
+            let operator = self.previous().to_owned();
+            let right = Box::new(self.factor());
+
+            return Expr::Binary {
+                left: Box::new(expr),
+                operator,
+                right,
+            };
+        }
+        expr
     }
 
-    fn factor() -> Expr {
-        todo!()
+    /// factor → unary ( ( "/" | "*" ) unary )* ;
+    fn factor(&mut self) -> Expr {
+        let expr = self.unary();
+        while self.match_token([TokenType::Slash, TokenType::Star]) {
+            let operator = self.previous().to_owned();
+
+            let right = Box::from(self.unary());
+
+            return Expr::Binary {
+                left: Box::from(expr),
+                operator,
+                right,
+            };
+        }
+
+        expr
     }
 
     /// (! | -) unary | primary
@@ -43,7 +105,7 @@ impl Parser {
 
             return Expr::Unary {
                 operator: operator.clone(),
-                expression: Box::new(right),
+                expression: Box::from(right),
             };
         }
 
@@ -93,7 +155,7 @@ impl Parser {
                     expression: Box::new(expr),
                 });
             }
-
+            self.error(self.previous(), "Expecting right paren");
             return None;
         }
         None
@@ -139,12 +201,41 @@ impl Parser {
         }
         return self.peek().token_type == token_type;
     }
+
+    fn error(&self, token: &Token, msg: &str) {
+        ErrorMsg::error(token, msg);
+    }
+
+    fn synchronize(&mut self) {
+        self.advance();
+
+        while !self.is_at_end() {
+            if self.previous().token_type == TokenType::Semicolon {
+                return;
+            }
+
+            if matches!(
+                self.peek().token_type,
+                TokenType::Class
+                    | TokenType::Fun
+                    | TokenType::Var
+                    | TokenType::For
+                    | TokenType::If
+                    | TokenType::While
+                    | TokenType::Print
+                    | TokenType::Return
+            ) {
+                return;
+            }
+            self.advance();
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::Parser;
-    use crate::token::Token;
+    use crate::{scanner::Scanner, token::Token};
 
     #[test]
     fn primary_test() {
@@ -156,5 +247,18 @@ mod test {
         )]);
 
         println!(" ==== {:?}", parser.primary());
+    }
+
+    #[test]
+    fn unary_test() {
+        let text = "! (1 + 9)";
+        let mut scanner = Scanner::new(text);
+        let tokens = scanner.scan_tokens();
+
+        println!("{tokens:?}");
+
+        let mut parser = Parser::new(tokens.to_vec());
+
+        println!("{:?}", parser.unary());
     }
 }

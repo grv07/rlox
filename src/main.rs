@@ -8,6 +8,8 @@ use anyhow::Context;
 use scanner::Scanner;
 use std::io::Write;
 use std::{env, fs::File, io::Read, path::Path};
+use token::Token;
+use token_type::TokenType;
 // use token::Token;
 // use token_type::TokenType;
 
@@ -48,14 +50,21 @@ impl Lox {
     }
 }
 
-struct ErrorMsg;
+pub struct ErrorMsg;
 
 impl ErrorMsg {
-    fn error(line: usize, msg: &str) {
-        Self::report(line, "", msg);
+    pub fn error(token: &Token, msg: &str) {
+        if token.token_type == TokenType::Eof {
+            Self::report(token.line, " at end ", msg);
+        }
+        Self::report(
+            token.line,
+            &format!(" at '{lexme}' ", lexme = &token.lexeme),
+            msg,
+        );
     }
 
-    fn report(line: usize, wh: &str, msg: &str) {
+    pub fn report(line: usize, wh: &str, msg: &str) {
         eprintln!("[line {line}] Error {wh}: {msg}");
     }
 }
