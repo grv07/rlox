@@ -1,4 +1,4 @@
-use std::{boxed::Box, fs::OpenOptions};
+use std::boxed::Box;
 
 use crate::{
     token::{LiteralValue, Token},
@@ -45,7 +45,7 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn evaluate(self) -> LiteralValue {
+    pub fn evaluate(&self) -> LiteralValue {
         match self {
             Expr::Binary {
                 left,
@@ -192,7 +192,7 @@ impl Expr {
                 }
             },
             Expr::Grouping { expression } => expression.evaluate(),
-            Expr::Literal { value } => value,
+            Expr::Literal { value } => value.clone(),
         }
     }
 }

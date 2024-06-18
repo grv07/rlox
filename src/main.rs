@@ -1,10 +1,12 @@
 mod expr;
+mod interpret;
 mod parser;
 mod scanner;
 mod token;
 mod token_type;
 
 use anyhow::Context;
+use interpret::Interpret;
 use parser::Parser;
 use scanner::Scanner;
 use std::io::Write;
@@ -76,9 +78,12 @@ fn run(source: String) {
     //     println!("{token:?}");
     // }
     let parser = Parser::new(scanner.scan_tokens().to_vec());
-    let expr = parser.parse();
-
-    println!("ECHO: {}", expr.evaluate().to_string());
+    let stmts = parser.parse();
+    Interpret::interpret(&stmts);
+    // for stmt in stmts {
+    //     println!("ECHO: {}", stmt.evaluate().to_string());
+    // }
+    // println!("ECHO: {}", exprs.evaluate().to_string());
 }
 
 fn main() -> anyhow::Result<()> {

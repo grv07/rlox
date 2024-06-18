@@ -10,14 +10,47 @@ pub struct Parser {
     current: usize,
 }
 
+#[derive(Debug)]
+pub enum Stmt {
+    Expression(Expr),
+    Print(Expr),
+}
+
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(mut self) -> Expr {
-        self.expression()
+    pub fn parse(mut self) -> Vec<Stmt> {
+        let mut stmts = vec![];
+
+        while !self.is_at_end() {
+            stmts.push(self.statement());
+        }
+
+        stmts
         // TODO: Handle synax errors
+    }
+
+    fn statement(&mut self) -> Stmt {
+        if self.match_token([TokenType::Print]) {
+            return self.print_stmt();
+        }
+        self.expression_stmt()
+    }
+
+    fn expression_stmt(&mut self) -> Stmt {
+        let expr = self.expression();
+        self.consume(TokenType::Semicolon, "Expect ';' after statement");
+
+        Stmt::Expression(expr)
+    }
+
+    fn print_stmt(&mut self) -> Stmt {
+        let expr = self.expression();
+        self.consume(TokenType::Semicolon, "Expect ';' after statement");
+
+        Stmt::Print(expr)
     }
 
     fn expression(&mut self) -> Expr {
@@ -196,6 +229,14 @@ impl Parser {
         }
 
         self.previous()
+    }
+
+    fn consume(&mut self, token_type: TokenType, msg: &str) {
+        let token = self.advance();
+
+        if token.token_type == token_type {
+            self.error(self.previous(), msg)
+        }
     }
 
     fn check(&self, token_type: TokenType) -> bool {
