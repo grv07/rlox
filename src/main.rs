@@ -5,6 +5,7 @@ mod token;
 mod token_type;
 
 use anyhow::Context;
+use parser::Parser;
 use scanner::Scanner;
 use std::io::Write;
 use std::{env, fs::File, io::Read, path::Path};
@@ -43,7 +44,7 @@ impl Lox {
             let mut line = String::default();
             let _ = std::io::stdin().read_line(&mut line);
 
-            println!("{}", line);
+            // println!("{}", line);
             run(line);
             self.had_error = false;
         }
@@ -71,9 +72,13 @@ impl ErrorMsg {
 
 fn run(source: String) {
     let mut scanner = Scanner::new(&source);
-    for token in scanner.scan_tokens() {
-        println!("{token:?}");
-    }
+    // for token in scanner.scan_tokens() {
+    //     println!("{token:?}");
+    // }
+    let parser = Parser::new(scanner.scan_tokens().to_vec());
+    let expr = parser.parse();
+
+    println!("ECHO: {}", expr.evaluate().to_string());
 }
 
 fn main() -> anyhow::Result<()> {

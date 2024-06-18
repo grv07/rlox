@@ -1,7 +1,5 @@
-use std::fmt::Binary;
-
 use crate::{
-    expr::{self, Expr},
+    expr::Expr,
     token::{LiteralValue, Token},
     token_type::TokenType,
     ErrorMsg,
@@ -13,8 +11,13 @@ pub struct Parser {
 }
 
 impl Parser {
-    fn new(tokens: Vec<Token>) -> Self {
+    pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
+    }
+
+    pub fn parse(mut self) -> Expr {
+        self.expression()
+        // TODO: Handle synax errors
     }
 
     fn expression(&mut self) -> Expr {
@@ -137,7 +140,7 @@ impl Parser {
 
         if self.match_token([TokenType::False]) {
             return Some(Expr::Literal {
-                value: LiteralValue::True,
+                value: LiteralValue::False,
             });
         }
 

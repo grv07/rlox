@@ -1,6 +1,9 @@
-use std::boxed::Box;
+use std::{boxed::Box, fs::OpenOptions};
 
-use crate::token::{LiteralValue, Token};
+use crate::{
+    token::{LiteralValue, Token},
+    token_type::TokenType,
+};
 
 // enum LiteralType {
 //     Number,
@@ -39,6 +42,159 @@ pub enum Expr {
     Literal {
         value: LiteralValue,
     },
+}
+
+impl Expr {
+    pub fn evaluate(self) -> LiteralValue {
+        match self {
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => match operator.token_type {
+                TokenType::Minus => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::IntValue(a - b)
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::FValue(a - b)
+                    }
+                    _ => todo!(),
+                },
+
+                TokenType::Slash => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::IntValue(a / b)
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::FValue(a / b)
+                    }
+                    _ => todo!(),
+                },
+
+                TokenType::Star => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::IntValue(a * b)
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::FValue(a * b)
+                    }
+                    _ => todo!(),
+                },
+
+                TokenType::Plus => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::IntValue(a + b)
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::FValue(a + b)
+                    }
+                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                        LiteralValue::StringValue(format!("{}{}", a, b))
+                    }
+                    _ => todo!(),
+                },
+
+                TokenType::Greater => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a > b))
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a > b))
+                    }
+                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a > b))
+                    }
+                    _ => todo!(),
+                },
+
+                TokenType::Less => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a < b))
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a < b))
+                    }
+                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a < b))
+                    }
+                    _ => todo!(),
+                },
+
+                TokenType::GreaterEqual => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a >= b))
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a >= b))
+                    }
+                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a >= b))
+                    }
+                    _ => todo!(),
+                },
+
+                TokenType::LessEqual => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a <= b))
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a <= b))
+                    }
+                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a <= b))
+                    }
+                    _ => todo!(),
+                },
+
+                TokenType::EqualEqual => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a == b))
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a == b))
+                    }
+                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a == b))
+                    }
+                    _ => todo!(),
+                },
+
+                TokenType::BangEqual => match (left.evaluate(), right.evaluate()) {
+                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a != b))
+                    }
+                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a != b))
+                    }
+                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                        LiteralValue::StringValue(format!("{}", a != b))
+                    }
+                    _ => todo!(),
+                },
+
+                _ => {
+                    println!("Defsault case");
+                    todo!()
+                }
+            },
+            Expr::Unary {
+                operator,
+                expression,
+            } => match (&operator.token_type, expression.evaluate()) {
+                (TokenType::Minus, LiteralValue::IntValue(x)) => LiteralValue::IntValue(-x),
+                (TokenType::Minus, LiteralValue::FValue(x)) => LiteralValue::FValue(-x),
+                (TokenType::Bang, LiteralValue::True) => LiteralValue::False,
+                (TokenType::Bang, LiteralValue::False) => LiteralValue::True,
+                _ => {
+                    println!("Not yet handled");
+                    todo!()
+                }
+            },
+            Expr::Grouping { expression } => expression.evaluate(),
+            Expr::Literal { value } => value,
+        }
+    }
 }
 
 impl ToString for Expr {
