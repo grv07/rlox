@@ -6,7 +6,7 @@ mod token;
 mod token_type;
 
 use anyhow::Context;
-use interpret::Interpret;
+use interpret::{Environment, Interpret};
 use parser::Parser;
 use scanner::Scanner;
 use std::io::Write;
@@ -22,14 +22,14 @@ struct Lox {
 }
 
 impl Lox {
-    fn run_file(&self, path: &Path) -> anyhow::Result<()> {
+    fn run_file(&self, path: &Path, env: &mut Environment) -> anyhow::Result<()> {
         let mut content = String::default();
         Read::read_to_string(
             &mut File::open(path).with_context(|| format!("Path: {:?}", path))?,
             &mut content,
         )?;
 
-        run(content);
+        run(content, env);
 
         if self.had_error {
             std::process::exit(64);
@@ -38,7 +38,7 @@ impl Lox {
         Ok(())
     }
 
-    fn run_prompt(&mut self) {
+    fn run_prompt(&mut self, env: &mut Environment) {
         loop {
             let _ = std::io::stdout().write(b"> ");
             let _ = std::io::stdout().flush();
@@ -47,7 +47,7 @@ impl Lox {
             let _ = std::io::stdin().read_line(&mut line);
 
             // println!("{}", line);
-            run(line);
+            run(line, env);
             self.had_error = false;
         }
     }
@@ -72,14 +72,15 @@ impl ErrorMsg {
     }
 }
 
-fn run(source: String) {
+fn run(source: String, env: &mut Environment) {
     let mut scanner = Scanner::new(&source);
-    // for token in scanner.scan_tokens() {
-    //     println!("{token:?}");
-    // }
+
     let parser = Parser::new(scanner.scan_tokens().to_vec());
     let stmts = parser.parse();
-    Interpret::interpret(&stmts);
+
+    let mut interpret = Interpret::new(env);
+    interpret.interpret(&stmts);
+
     // for stmt in stmts {
     //     println!("ECHO: {}", stmt.evaluate().to_string());
     // }
@@ -87,15 +88,16 @@ fn run(source: String) {
 }
 
 fn main() -> anyhow::Result<()> {
+    let mut env = Environment::new();
     let mut lox = Lox::default();
     let args: Vec<String> = env::args().collect();
 
     if args.len() > 2 {
         std::process::exit(64)
     } else if args.len() == 2 {
-        lox.run_file(&Path::new(args.get(1).unwrap()))?;
+        lox.run_file(&Path::new(args.get(1).unwrap()), &mut env)?;
     } else {
-        let _ = lox.run_prompt();
+        let _ = lox.run_prompt(&mut env);
     }
 
     Ok(())

@@ -8,35 +8,63 @@ use crate::{
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
+    // env: &'a mut Environment,
 }
 
 #[derive(Debug)]
 pub enum Stmt {
     Expression(Expr),
     Print(Expr),
+    Variable { token: Token, expression: Expr },
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+        Self {
+            tokens,
+            current: 0,
+            // env,
+        }
     }
 
     pub fn parse(mut self) -> Vec<Stmt> {
         let mut stmts = vec![];
 
         while !self.is_at_end() {
-            stmts.push(self.statement());
+            stmts.push(self.declaration());
         }
 
         stmts
         // TODO: Handle synax errors
     }
 
-    fn statement(&mut self) -> Stmt {
+    fn _statement(&mut self) -> Stmt {
         if self.match_token([TokenType::Print]) {
             return self.print_stmt();
         }
         self.expression_stmt()
+    }
+
+    fn declaration(&mut self) -> Stmt {
+        if self.match_token([TokenType::Var]) {
+            return self.var_declaration();
+        }
+        if self.match_token([TokenType::Print]) {
+            return self.print_stmt();
+        }
+        self.expression_stmt()
+    }
+
+    fn var_declaration(&mut self) -> Stmt {
+        let token = self.consume(TokenType::Identifier, "Expect identifier");
+        self.consume(TokenType::Equal, "Expect '=' after identifer");
+
+        let expression = self.expression();
+
+        self.consume(TokenType::Semicolon, "Expect ';' after statement");
+
+        // TODO: Handle the case to not have an expression ex: var test;
+        Stmt::Variable { token, expression }
     }
 
     fn expression_stmt(&mut self) -> Stmt {
@@ -60,6 +88,7 @@ impl Parser {
     /// equality → comparison ( ( "!=" | "==" ) comparison )* ;
     fn equality(&mut self) -> Expr {
         let expr = self.comparison();
+
         while self.match_token([TokenType::BangEqual, TokenType::EqualEqual]) {
             let operator = self.previous().to_owned();
 
@@ -194,6 +223,13 @@ impl Parser {
             self.error(self.previous(), "Expecting right paren");
             return None;
         }
+
+        if self.match_token([TokenType::Identifier]) {
+            return Some(Expr::Variable {
+                name: self.previous().to_owned(),
+            });
+        }
+
         None
     }
 
@@ -231,12 +267,13 @@ impl Parser {
         self.previous()
     }
 
-    fn consume(&mut self, token_type: TokenType, msg: &str) {
-        let token = self.advance();
-
-        if token.token_type == token_type {
-            self.error(self.previous(), msg)
+    fn consume(&mut self, token_type: TokenType, msg: &str) -> Token {
+        let token = self.advance().clone();
+        if token.token_type != token_type {
+            self.error(self.previous(), msg);
         }
+
+        token
     }
 
     fn check(&self, token_type: TokenType) -> bool {
@@ -250,7 +287,7 @@ impl Parser {
         ErrorMsg::error(token, msg);
     }
 
-    fn synchronize(&mut self) {
+    fn _synchronize(&mut self) {
         self.advance();
 
         while !self.is_at_end() {

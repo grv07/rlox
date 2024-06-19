@@ -1,6 +1,7 @@
 use std::boxed::Box;
 
 use crate::{
+    interpret::Environment,
     token::{LiteralValue, Token},
     token_type::TokenType,
 };
@@ -42,17 +43,21 @@ pub enum Expr {
     Literal {
         value: LiteralValue,
     },
+
+    Variable {
+        name: Token,
+    },
 }
 
 impl Expr {
-    pub fn evaluate(&self) -> LiteralValue {
+    pub fn evaluate(&self, env: &mut Environment) -> LiteralValue {
         match self {
             Expr::Binary {
                 left,
                 operator,
                 right,
             } => match operator.token_type {
-                TokenType::Minus => match (left.evaluate(), right.evaluate()) {
+                TokenType::Minus => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::IntValue(a - b)
                     }
@@ -62,7 +67,7 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::Slash => match (left.evaluate(), right.evaluate()) {
+                TokenType::Slash => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::IntValue(a / b)
                     }
@@ -72,7 +77,7 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::Star => match (left.evaluate(), right.evaluate()) {
+                TokenType::Star => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::IntValue(a * b)
                     }
@@ -82,7 +87,7 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::Plus => match (left.evaluate(), right.evaluate()) {
+                TokenType::Plus => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::IntValue(a + b)
                     }
@@ -95,7 +100,7 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::Greater => match (left.evaluate(), right.evaluate()) {
+                TokenType::Greater => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::StringValue(format!("{}", a > b))
                     }
@@ -108,7 +113,7 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::Less => match (left.evaluate(), right.evaluate()) {
+                TokenType::Less => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::StringValue(format!("{}", a < b))
                     }
@@ -121,7 +126,7 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::GreaterEqual => match (left.evaluate(), right.evaluate()) {
+                TokenType::GreaterEqual => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::StringValue(format!("{}", a >= b))
                     }
@@ -134,7 +139,7 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::LessEqual => match (left.evaluate(), right.evaluate()) {
+                TokenType::LessEqual => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::StringValue(format!("{}", a <= b))
                     }
@@ -147,7 +152,7 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::EqualEqual => match (left.evaluate(), right.evaluate()) {
+                TokenType::EqualEqual => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::StringValue(format!("{}", a == b))
                     }
@@ -160,7 +165,7 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::BangEqual => match (left.evaluate(), right.evaluate()) {
+                TokenType::BangEqual => match (left.evaluate(env), right.evaluate(env)) {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::StringValue(format!("{}", a != b))
                     }
@@ -181,7 +186,7 @@ impl Expr {
             Expr::Unary {
                 operator,
                 expression,
-            } => match (&operator.token_type, expression.evaluate()) {
+            } => match (&operator.token_type, expression.evaluate(env)) {
                 (TokenType::Minus, LiteralValue::IntValue(x)) => LiteralValue::IntValue(-x),
                 (TokenType::Minus, LiteralValue::FValue(x)) => LiteralValue::FValue(-x),
                 (TokenType::Bang, LiteralValue::True) => LiteralValue::False,
@@ -191,7 +196,11 @@ impl Expr {
                     todo!()
                 }
             },
-            Expr::Grouping { expression } => expression.evaluate(),
+            Expr::Variable { name } => {
+                let value = env.get(&name.lexeme);
+                value.to_owned()
+            }
+            Expr::Grouping { expression } => expression.evaluate(env),
             Expr::Literal { value } => value.clone(),
         }
     }
@@ -218,6 +227,7 @@ impl ToString for Expr {
 
             Expr::Grouping { expression } => format!("(group {})", expression.to_string()),
             Expr::Literal { value } => format!("{}", value.to_string()),
+            Expr::Variable { .. } => todo!("---------"),
         }
     }
 }
