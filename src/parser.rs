@@ -5,6 +5,7 @@ use crate::{
     ErrorMsg,
 };
 
+#[derive(Debug)]
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
@@ -15,6 +16,7 @@ pub struct Parser {
 pub enum Stmt {
     Expression(Expr),
     Print(Expr),
+    Block(Vec<Stmt>),
     Variable { token: Token, expression: Expr },
 }
 
@@ -33,7 +35,6 @@ impl Parser {
         while !self.is_at_end() {
             stmts.push(self.declaration());
         }
-
         stmts
         // TODO: Handle synax errors
     }
@@ -49,9 +50,24 @@ impl Parser {
         if self.match_token([TokenType::Var]) {
             return self.var_declaration();
         }
+
         if self.match_token([TokenType::Print]) {
             return self.print_stmt();
         }
+
+        if self.match_token([TokenType::LeftBrace]) {
+            let mut statements = vec![];
+
+            while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+                statements.push(self.declaration());
+            }
+
+            // dbg!(&statements);
+            self.consume(TokenType::RightBrace, "Expect } after block");
+
+            return Stmt::Block(statements);
+        }
+
         self.expression_stmt()
     }
 
@@ -151,7 +167,6 @@ impl Parser {
             let operator = self.previous().to_owned();
 
             let right = Box::from(self.unary());
-
             return Expr::Binary {
                 left: Box::from(expr),
                 operator,

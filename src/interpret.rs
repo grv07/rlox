@@ -1,7 +1,7 @@
 use crate::{parser::Stmt, token::LiteralValue};
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Environment {
     define: HashMap<String, LiteralValue>,
 }
@@ -20,40 +20,49 @@ impl Environment {
     pub fn get(&mut self, key: &str) -> &LiteralValue {
         match self.define.get(key) {
             Some(v) => v,
-            None => todo!(""),
+            None => {
+                println!("Var: {} not found in this scope", key);
+                &LiteralValue::Nil
+            }
         }
     }
 }
 
-// #[derive(Default)]
-pub struct Interpret<'a> {
-    environment: &'a mut Environment,
-}
+pub struct Interpret;
 
-impl<'a> Interpret<'a> {
-    pub fn new(environment: &'a mut Environment) -> Self {
-        Self { environment }
+impl Interpret {
+    pub fn new() -> Self {
+        Self {}
     }
 
-    pub fn interpret(&mut self, stmts: &[Stmt]) {
+    pub fn interpret(&mut self, stmts: &[Stmt], env: Rc<RefCell<Environment>>) {
         for stmt in stmts {
-            self.execute(stmt);
+            self.execute(stmt, env.clone());
         }
     }
 
-    fn execute(&mut self, stmt: &Stmt) {
+    fn execute(&mut self, stmt: &Stmt, env: Rc<RefCell<Environment>>) {
         match stmt {
             Stmt::Expression(expr) => {
-                expr.evaluate(&mut self.environment);
+                expr.evaluate(env);
             }
             Stmt::Print(expr) => {
-                println!("{}", expr.evaluate(&mut self.environment).to_string());
+                println!("{}", expr.evaluate(env.clone()).to_string());
             }
             Stmt::Variable { token, expression } => {
-                let value = expression.evaluate(&mut self.environment);
+                let value = expression.evaluate(env.clone());
                 let name = token.lexeme.to_owned();
 
-                self.environment.define(name, value);
+                let mut t = env.borrow_mut();
+
+                t.define(name, value);
+            }
+            Stmt::Block(stmts) => {
+                let inner_env = Rc::new(RefCell::new(env.clone().borrow().clone()));
+
+                for stmt in stmts {
+                    self.execute(stmt, inner_env.clone());
+                }
             }
         }
     }

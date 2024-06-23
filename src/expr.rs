@@ -1,4 +1,4 @@
-use std::boxed::Box;
+use std::{boxed::Box, cell::RefCell, rc::Rc};
 
 use crate::{
     interpret::Environment,
@@ -50,14 +50,15 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn evaluate(&self, env: &mut Environment) -> LiteralValue {
+    pub fn evaluate(&self, env: Rc<RefCell<Environment>>) -> LiteralValue {
         match self {
             Expr::Binary {
                 left,
                 operator,
                 right,
             } => match operator.token_type {
-                TokenType::Minus => match (left.evaluate(env), right.evaluate(env)) {
+                TokenType::Minus => match (left.evaluate(env.clone()), right.evaluate(env.clone()))
+                {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::IntValue(a - b)
                     }
@@ -67,7 +68,8 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::Slash => match (left.evaluate(env), right.evaluate(env)) {
+                TokenType::Slash => match (left.evaluate(env.clone()), right.evaluate(env.clone()))
+                {
                     (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
                         LiteralValue::IntValue(a / b)
                     }
@@ -77,106 +79,122 @@ impl Expr {
                     _ => todo!(),
                 },
 
-                TokenType::Star => match (left.evaluate(env), right.evaluate(env)) {
-                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
-                        LiteralValue::IntValue(a * b)
+                TokenType::Star => {
+                    match (left.evaluate(env.clone()), right.evaluate(env.clone())) {
+                        (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                            LiteralValue::IntValue(a * b)
+                        }
+                        (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                            LiteralValue::FValue(a * b)
+                        }
+                        _ => todo!(),
                     }
-                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
-                        LiteralValue::FValue(a * b)
-                    }
-                    _ => todo!(),
-                },
+                }
 
-                TokenType::Plus => match (left.evaluate(env), right.evaluate(env)) {
-                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
-                        LiteralValue::IntValue(a + b)
+                TokenType::Plus => {
+                    match (left.evaluate(env.clone()), right.evaluate(env.clone())) {
+                        (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                            LiteralValue::IntValue(a + b)
+                        }
+                        (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                            LiteralValue::FValue(a + b)
+                        }
+                        (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                            LiteralValue::StringValue(format!("{}{}", a, b))
+                        }
+                        _ => todo!(),
                     }
-                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
-                        LiteralValue::FValue(a + b)
-                    }
-                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
-                        LiteralValue::StringValue(format!("{}{}", a, b))
-                    }
-                    _ => todo!(),
-                },
+                }
 
-                TokenType::Greater => match (left.evaluate(env), right.evaluate(env)) {
-                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a > b))
+                TokenType::Greater => {
+                    match (left.evaluate(env.clone()), right.evaluate(env.clone())) {
+                        (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a > b))
+                        }
+                        (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a > b))
+                        }
+                        (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a > b))
+                        }
+                        _ => todo!(),
                     }
-                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a > b))
-                    }
-                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a > b))
-                    }
-                    _ => todo!(),
-                },
+                }
 
-                TokenType::Less => match (left.evaluate(env), right.evaluate(env)) {
-                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a < b))
+                TokenType::Less => {
+                    match (left.evaluate(env.clone()), right.evaluate(env.clone())) {
+                        (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a < b))
+                        }
+                        (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a < b))
+                        }
+                        (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a < b))
+                        }
+                        _ => todo!(),
                     }
-                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a < b))
-                    }
-                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a < b))
-                    }
-                    _ => todo!(),
-                },
+                }
 
-                TokenType::GreaterEqual => match (left.evaluate(env), right.evaluate(env)) {
-                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a >= b))
+                TokenType::GreaterEqual => {
+                    match (left.evaluate(env.clone()), right.evaluate(env.clone())) {
+                        (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a >= b))
+                        }
+                        (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a >= b))
+                        }
+                        (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a >= b))
+                        }
+                        _ => todo!(),
                     }
-                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a >= b))
-                    }
-                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a >= b))
-                    }
-                    _ => todo!(),
-                },
+                }
 
-                TokenType::LessEqual => match (left.evaluate(env), right.evaluate(env)) {
-                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a <= b))
+                TokenType::LessEqual => {
+                    match (left.evaluate(env.clone()), right.evaluate(env.clone())) {
+                        (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a <= b))
+                        }
+                        (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a <= b))
+                        }
+                        (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a <= b))
+                        }
+                        _ => todo!(),
                     }
-                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a <= b))
-                    }
-                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a <= b))
-                    }
-                    _ => todo!(),
-                },
+                }
 
-                TokenType::EqualEqual => match (left.evaluate(env), right.evaluate(env)) {
-                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a == b))
+                TokenType::EqualEqual => {
+                    match (left.evaluate(env.clone()), right.evaluate(env.clone())) {
+                        (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a == b))
+                        }
+                        (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a == b))
+                        }
+                        (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a == b))
+                        }
+                        _ => todo!(),
                     }
-                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a == b))
-                    }
-                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a == b))
-                    }
-                    _ => todo!(),
-                },
+                }
 
-                TokenType::BangEqual => match (left.evaluate(env), right.evaluate(env)) {
-                    (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a != b))
+                TokenType::BangEqual => {
+                    match (left.evaluate(env.clone()), right.evaluate(env.clone())) {
+                        (LiteralValue::IntValue(a), LiteralValue::IntValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a != b))
+                        }
+                        (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a != b))
+                        }
+                        (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
+                            LiteralValue::StringValue(format!("{}", a != b))
+                        }
+                        _ => todo!(),
                     }
-                    (LiteralValue::FValue(a), LiteralValue::FValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a != b))
-                    }
-                    (LiteralValue::StringValue(a), LiteralValue::StringValue(b)) => {
-                        LiteralValue::StringValue(format!("{}", a != b))
-                    }
-                    _ => todo!(),
-                },
+                }
 
                 _ => {
                     println!("Defsault case");
@@ -186,7 +204,7 @@ impl Expr {
             Expr::Unary {
                 operator,
                 expression,
-            } => match (&operator.token_type, expression.evaluate(env)) {
+            } => match (&operator.token_type, expression.evaluate(env.clone())) {
                 (TokenType::Minus, LiteralValue::IntValue(x)) => LiteralValue::IntValue(-x),
                 (TokenType::Minus, LiteralValue::FValue(x)) => LiteralValue::FValue(-x),
                 (TokenType::Bang, LiteralValue::True) => LiteralValue::False,
@@ -197,6 +215,7 @@ impl Expr {
                 }
             },
             Expr::Variable { name } => {
+                let mut env = env.borrow_mut();
                 let value = env.get(&name.lexeme);
                 value.to_owned()
             }
