@@ -64,6 +64,19 @@ impl Interpret {
                     self.execute(stmt, inner_env.clone());
                 }
             }
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                if condition.evaluate(env.clone()) == LiteralValue::True {
+                    self.execute(then_branch, env)
+                } else {
+                    if let Some(stmt) = else_branch {
+                        self.execute(stmt, env.clone())
+                    }
+                }
+            }
         }
     }
 }

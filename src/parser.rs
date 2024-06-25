@@ -17,7 +17,17 @@ pub enum Stmt {
     Expression(Expr),
     Print(Expr),
     Block(Vec<Stmt>),
-    Variable { token: Token, expression: Expr },
+
+    Variable {
+        token: Token,
+        expression: Expr,
+    },
+
+    If {
+        condition: Expr,
+        then_branch: Box<Stmt>,
+        else_branch: Option<Box<Stmt>>,
+    },
 }
 
 impl Parser {
@@ -55,6 +65,10 @@ impl Parser {
             return self.print_stmt();
         }
 
+        if self.match_token([TokenType::If]) {
+            return self.if_stmt();
+        }
+
         if self.match_token([TokenType::LeftBrace]) {
             let mut statements = vec![];
 
@@ -69,6 +83,28 @@ impl Parser {
         }
 
         self.expression_stmt()
+    }
+
+    fn if_stmt(&mut self) -> Stmt {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'if'");
+
+        let condition = self.expression();
+
+        self.consume(TokenType::RightParen, "Expect ')' after 'if'");
+
+        let then_stmt = self.declaration();
+
+        let else_stmt = if self.match_token([TokenType::Else]) {
+            Some(Box::new(self.declaration()))
+        } else {
+            None
+        };
+
+        Stmt::If {
+            condition,
+            then_branch: Box::new(then_stmt),
+            else_branch: else_stmt,
+        }
     }
 
     fn var_declaration(&mut self) -> Stmt {
