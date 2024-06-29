@@ -134,7 +134,29 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Expr {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Expr {
+        let expr = self.equality();
+
+        if self.match_token([TokenType::Equal]) {
+            let token = self.previous().clone();
+            let value = self.assignment();
+
+            return match expr {
+                Expr::Variable { name } => Expr::Assign {
+                    name,
+                    value: Box::new(value),
+                },
+                _ => {
+                    ErrorMsg::error(&token, "Invalid assignment target");
+                    expr
+                }
+            };
+        }
+
+        expr
     }
 
     /// equality → comparison ( ( "!=" | "==" ) comparison )* ;

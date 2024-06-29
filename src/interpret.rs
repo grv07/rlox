@@ -17,6 +17,16 @@ impl Environment {
         self.define.insert(key, value);
     }
 
+    pub fn assign(&mut self, key: &str, value: LiteralValue) -> LiteralValue {
+        if self.define.contains_key(key) {
+            let inserted = self.define.insert(key.to_string(), value);
+            inserted.unwrap()
+        } else {
+            println!("Var: {} not found in this scope", key);
+            LiteralValue::Nil
+        }
+    }
+
     pub fn get(&mut self, key: &str) -> &LiteralValue {
         match self.define.get(key) {
             Some(v) => v,

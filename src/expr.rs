@@ -50,6 +50,11 @@ pub enum Expr {
     Variable {
         name: Token,
     },
+
+    Assign {
+        name: Token,
+        value: Box<Expr>,
+    },
 }
 
 impl Expr {
@@ -209,6 +214,13 @@ impl Expr {
                 let value = env.get(&name.lexeme);
                 value.to_owned()
             }
+
+            Expr::Assign { name, value } => {
+                let value = value.evaluate(env.clone());
+                let mut env = env.borrow_mut();
+                env.assign(&name.lexeme, value)
+            }
+
             Expr::Grouping { expression } => expression.evaluate(env),
             Expr::Literal { value } => value.clone(),
         }
@@ -237,6 +249,7 @@ impl ToString for Expr {
             Expr::Grouping { expression } => format!("(group {})", expression.to_string()),
             Expr::Literal { value } => format!("{}", value.to_string()),
             Expr::Variable { .. } => todo!("---------"),
+            Expr::Assign { .. } => todo!(),
         }
     }
 }
