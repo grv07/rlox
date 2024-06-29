@@ -138,7 +138,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Expr {
-        let expr = self.equality();
+        let expr = self.or();
 
         if self.match_token([TokenType::Equal]) {
             let token = self.previous().clone();
@@ -153,6 +153,44 @@ impl Parser {
                     ErrorMsg::error(&token, "Invalid assignment target");
                     expr
                 }
+            };
+        }
+
+        expr
+    }
+
+    // "Logical  : Expr left, Token operator, Expr right",
+    fn or(&mut self) -> Expr {
+        let expr = self.and();
+
+        if self.match_token([TokenType::Or]) {
+            let operator = self.previous().clone();
+
+            let right = Box::new(self.and());
+
+            return Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right,
+            };
+        }
+
+        expr
+    }
+
+    // "Logical  : Expr left, Token operator, Expr right",
+    fn and(&mut self) -> Expr {
+        let expr = self.equality();
+
+        if self.match_token([TokenType::And]) {
+            let operator = self.previous().clone();
+
+            let right = Box::new(self.equality());
+
+            return Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right,
             };
         }
 

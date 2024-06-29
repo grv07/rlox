@@ -15,8 +15,6 @@ use std::rc::Rc;
 use std::{env, fs::File, io::Read, path::Path};
 use token::Token;
 use token_type::TokenType;
-// use token::Token;
-// use token_type::TokenType;
 
 #[derive(Default)]
 struct Lox {

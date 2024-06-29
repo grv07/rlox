@@ -51,6 +51,12 @@ pub enum Expr {
         name: Token,
     },
 
+    Logical {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
+
     Assign {
         name: Token,
         value: Box<Expr>,
@@ -221,6 +227,32 @@ impl Expr {
                 env.assign(&name.lexeme, value)
             }
 
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => match (
+                right.evaluate(env.clone()),
+                &operator.token_type,
+                left.evaluate(env.clone()),
+            ) {
+                (LiteralValue::True, TokenType::And, LiteralValue::True) => LiteralValue::True,
+                (LiteralValue::True, TokenType::And, LiteralValue::False) => LiteralValue::False,
+
+                (LiteralValue::False, TokenType::And, LiteralValue::True | LiteralValue::False) => {
+                    LiteralValue::False
+                }
+
+                (LiteralValue::True, TokenType::Or, LiteralValue::True | LiteralValue::False) => {
+                    LiteralValue::True
+                }
+                (LiteralValue::False, TokenType::Or, LiteralValue::True) => LiteralValue::True,
+
+                (LiteralValue::False, TokenType::Or, LiteralValue::False) => LiteralValue::False,
+
+                _ => todo!(),
+            },
+
             Expr::Grouping { expression } => expression.evaluate(env),
             Expr::Literal { value } => value.clone(),
         }
@@ -248,8 +280,7 @@ impl ToString for Expr {
 
             Expr::Grouping { expression } => format!("(group {})", expression.to_string()),
             Expr::Literal { value } => format!("{}", value.to_string()),
-            Expr::Variable { .. } => todo!("---------"),
-            Expr::Assign { .. } => todo!(),
+            _ => todo!(),
         }
     }
 }
