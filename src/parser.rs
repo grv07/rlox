@@ -28,6 +28,11 @@ pub enum Stmt {
         then_branch: Box<Stmt>,
         else_branch: Option<Box<Stmt>>,
     },
+
+    While {
+        expr: Expr,
+        stmt: Box<Stmt>,
+    },
 }
 
 impl Parser {
@@ -49,18 +54,7 @@ impl Parser {
         // TODO: Handle synax errors
     }
 
-    fn _statement(&mut self) -> Stmt {
-        if self.match_token([TokenType::Print]) {
-            return self.print_stmt();
-        }
-        self.expression_stmt()
-    }
-
-    fn declaration(&mut self) -> Stmt {
-        if self.match_token([TokenType::Var]) {
-            return self.var_declaration();
-        }
-
+    fn statement(&mut self) -> Stmt {
         if self.match_token([TokenType::Print]) {
             return self.print_stmt();
         }
@@ -76,13 +70,36 @@ impl Parser {
                 statements.push(self.declaration());
             }
 
-            // dbg!(&statements);
             self.consume(TokenType::RightBrace, "Expect } after block");
 
             return Stmt::Block(statements);
         }
 
+        if self.match_token([TokenType::While]) {
+            return self.while_stmt();
+        }
+
         self.expression_stmt()
+    }
+
+    fn declaration(&mut self) -> Stmt {
+        if self.match_token([TokenType::Var]) {
+            return self.var_declaration();
+        }
+
+        self.statement()
+    }
+
+    fn while_stmt(&mut self) -> Stmt {
+        self.consume(TokenType::LeftParen, "Expect '(' after while");
+
+        let expr = self.expression();
+
+        self.consume(TokenType::RightParen, "Expect ')' after while");
+
+        let stmt = Box::new(self.statement());
+
+        Stmt::While { expr, stmt }
     }
 
     fn if_stmt(&mut self) -> Stmt {

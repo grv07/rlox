@@ -56,9 +56,11 @@ impl Interpret {
             Stmt::Expression(expr) => {
                 expr.evaluate(env);
             }
+
             Stmt::Print(expr) => {
                 println!("{}", expr.evaluate(env.clone()).to_string());
             }
+
             Stmt::Variable { token, expression } => {
                 let value = expression.evaluate(env.clone());
                 let name = token.lexeme.to_owned();
@@ -67,6 +69,7 @@ impl Interpret {
 
                 t.define(name, value);
             }
+
             Stmt::Block(stmts) => {
                 let inner_env = Rc::new(RefCell::new(env.clone().borrow().clone()));
 
@@ -74,6 +77,7 @@ impl Interpret {
                     self.execute(stmt, inner_env.clone());
                 }
             }
+
             Stmt::If {
                 condition,
                 then_branch,
@@ -85,6 +89,14 @@ impl Interpret {
                     if let Some(stmt) = else_branch {
                         self.execute(stmt, env.clone())
                     }
+                }
+            }
+
+            Stmt::While { expr, stmt } => {
+                let condition = expr.evaluate(env.clone());
+
+                while condition == LiteralValue::True {
+                    self.execute(&stmt, env.clone());
                 }
             }
         }
