@@ -88,7 +88,7 @@ fn run(source: String, env: Rc<RefCell<Environment>>) {
 }
 
 fn main() -> anyhow::Result<()> {
-    let env = Rc::new(RefCell::new(Environment::new()));
+    let env = Rc::new(RefCell::new(Environment::new(None)));
     let mut lox = Lox::default();
     let args: Vec<String> = env::args().collect();
 

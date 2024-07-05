@@ -17,3 +17,41 @@ var c = "global c";
 print a;
 print b;
 print c;
+
+var t ="glo"; 
+{ 
+  var i = "iner"; 
+  print t;
+} 
+{ 
+  var ii = "ii"; 
+  print ii; 
+  print t; 
+  { 
+    print ii; 
+    print t; 
+    var iii = "iii"; 
+    print iii;
+
+    iii = "jjj";
+
+    print iii;
+
+    t = "local";
+
+    print t;
+  }
+}
+
+
+var i = 0;
+
+while (i< 10) {
+  print i;
+  i = i+1;
+}
+
+
+for (var i = 10; i >= 0; i = i-1) {
+  print i;
+}

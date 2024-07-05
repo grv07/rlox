@@ -1,30 +1,10 @@
-use std::{boxed::Box, cell::RefCell, rc::Rc};
-
 use crate::{
     interpret::Environment,
     token::{LiteralValue, Token},
     token_type::TokenType,
 };
 
-// enum LiteralType {
-//     Number,
-//     String,
-//     True,
-//     False,
-//     Nil,
-// }
-
-// impl Into<String> for LiteralType {
-//     fn into(self) -> String {
-//         match self {
-//             LiteralType::Number => todo!(),
-//             LiteralType::String => todo!(),
-//             LiteralType::True => todo!(),
-//             LiteralType::False => todo!(),
-//             LiteralType::Nil => todo!(),
-//         }
-//     }
-// }
+use std::{boxed::Box, cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
 pub enum Expr {
@@ -215,11 +195,7 @@ impl Expr {
                     todo!()
                 }
             },
-            Expr::Variable { name } => {
-                let mut env = env.borrow_mut();
-                let value = env.get(&name.lexeme);
-                value.to_owned()
-            }
+            Expr::Variable { name } => env.borrow().get(&name.lexeme),
 
             Expr::Assign { name, value } => {
                 let value = value.evaluate(env.clone());

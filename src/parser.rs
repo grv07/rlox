@@ -33,6 +33,13 @@ pub enum Stmt {
         expr: Expr,
         stmt: Box<Stmt>,
     },
+
+    For {
+        initializer: Expr,
+        condition: Expr,
+        increment: Expr,
+        body: Box<Stmt>,
+    },
 }
 
 impl Parser {
@@ -79,6 +86,10 @@ impl Parser {
             return self.while_stmt();
         }
 
+        if self.match_token([TokenType::For]) {
+            return self.for_stmt();
+        }
+
         self.expression_stmt()
     }
 
@@ -88,6 +99,70 @@ impl Parser {
         }
 
         self.statement()
+    }
+
+    fn for_stmt(&mut self) -> Stmt {
+        // for (var i = 0; i < 10; i=i+1 ) { print i }
+        self.consume(TokenType::LeftParen, "Expect '(' after initialization");
+
+        let initializer = if self.match_token([TokenType::Semicolon]) {
+            None
+        } else if self.match_token([TokenType::Var]) {
+            Some(self.var_declaration())
+        } else {
+            Some(self.expression_stmt())
+        };
+
+        // i < 10; i=i+1 ) { print i }
+
+        let condition = if self.match_token([TokenType::Semicolon]) {
+            None
+        } else {
+            Some(self.expression())
+        };
+
+        // ; i = i+1 ) { print i }
+        self.consume(TokenType::Semicolon, "Expect ';' after initialization");
+
+        // i = 1+1  ) { print i }
+        let increment = if self.match_token([TokenType::Semicolon]) {
+            None
+        } else {
+            Some(Stmt::Expression(self.expression()))
+        };
+
+        self.consume(TokenType::RightParen, "Expect ')' after initialization");
+
+        // Create a while body similarly how C handles the for loop
+        let body = self.statement();
+
+        let body = if let Some(incr) = increment {
+            Stmt::Block(vec![incr, body])
+        } else {
+            body
+        };
+
+        let body = if let Some(expr) = condition {
+            Stmt::While {
+                expr,
+                stmt: Box::new(body),
+            }
+        } else {
+            Stmt::While {
+                expr: Expr::Literal {
+                    value: LiteralValue::True,
+                },
+                stmt: Box::new(body),
+            }
+        };
+
+        let body = if let Some(initializer) = initializer {
+            Stmt::Block(vec![initializer, body])
+        } else {
+            body
+        };
+
+        body
     }
 
     fn while_stmt(&mut self) -> Stmt {

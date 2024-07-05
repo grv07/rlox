@@ -1,14 +1,16 @@
-use crate::{parser::Stmt, token::LiteralValue};
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use crate::{parser::Stmt, token::LiteralValue, token_type::TokenType};
+use std::{cell::RefCell, collections::HashMap, ops::RangeInclusive, rc::Rc};
 
 #[derive(Default, Debug, Clone)]
 pub struct Environment {
     define: HashMap<String, LiteralValue>,
+    enclosing: Option<Box<Rc<RefCell<Environment>>>>,
 }
 
 impl Environment {
-    pub fn new() -> Self {
+    pub fn new(enclosing: Option<Box<Rc<RefCell<Environment>>>>) -> Self {
         Self {
+            enclosing,
             ..Default::default()
         }
     }
@@ -22,18 +24,32 @@ impl Environment {
             let inserted = self.define.insert(key.to_string(), value);
             inserted.unwrap()
         } else {
+            if let Some(enclosing) = self.enclosing.as_ref() {
+                return enclosing.borrow_mut().assign(key, value);
+            };
+
             println!("Var: {} not found in this scope", key);
             LiteralValue::Nil
         }
     }
 
-    pub fn get(&mut self, key: &str) -> &LiteralValue {
-        match self.define.get(key) {
-            Some(v) => v,
-            None => {
-                println!("Var: {} not found in this scope", key);
-                &LiteralValue::Nil
+    pub fn get(&self, key: &str) -> LiteralValue {
+        let value = self
+            .define
+            .get(key)
+            .unwrap_or(&LiteralValue::Nil)
+            .to_owned();
+
+        match value {
+            LiteralValue::Nil => {
+                // if eclosing is None
+                let Some(enclosing) = self.enclosing.as_ref() else {
+                    return LiteralValue::Nil;
+                };
+
+                return enclosing.borrow().get(key);
             }
+            _ => value,
         }
     }
 }
@@ -71,10 +87,10 @@ impl Interpret {
             }
 
             Stmt::Block(stmts) => {
-                let inner_env = Rc::new(RefCell::new(env.clone().borrow().clone()));
+                let env = Rc::new(RefCell::new(Environment::new(Some(Box::new(env.clone())))));
 
                 for stmt in stmts {
-                    self.execute(stmt, inner_env.clone());
+                    self.execute(stmt, env.clone());
                 }
             }
 
@@ -93,12 +109,12 @@ impl Interpret {
             }
 
             Stmt::While { expr, stmt } => {
-                let condition = expr.evaluate(env.clone());
-
-                while condition == LiteralValue::True {
+                while expr.evaluate(env.clone()) == LiteralValue::True {
                     self.execute(&stmt, env.clone());
                 }
             }
+
+            _ => todo!(),
         }
     }
 }
